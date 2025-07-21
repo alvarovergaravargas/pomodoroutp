@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Flow | Temporizador Pomodoro Inteligente</title>
+    <style>
+        /* ------------------------- */
+        /* --- ESTILOS GENERALES Y VARIABLES --- */
+        /* ------------------------- */
+        :root {
+            --font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            --focus-bg: #EAF2F8; /* Un azul muy claro y suave */
+            --focus-accent: #3498DB;
+            --break-bg: #E8F6F3; /* Un verde menta muy claro */
+            --break-accent: #2ECC71;
+            --text-color: #34495E;
+            --light-gray: #BDC3C7;
+            --white: #FFFFFF;
+            --modal-overlay: rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+            font-family: var(--font-family);
+            color: var(--text-color);
+            background-color: var(--focus-bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.8s ease;
+            text-align: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 500px;
+            padding: 20px;
+        }
+
+        .user-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        #user-greeting {
+            font-weight: 300;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        #user-avatar {
+            font-size: 2rem;
+        }
+
+        #mode-display {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: var(--focus-accent);
+            transition: color 0.8s ease;
+        }
+
+        /* ------------------------- */
+        /* --- PANTALLA DE BIENVENIDA --- */
+        /* ------------------------- */
+        #welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--focus-bg);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        #welcome-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .welcome-box {
+            background: var(--white);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .welcome-box h2 {
+            margin-top: 0;
+        }
+        
+        .welcome-box p {
+            margin-bottom: 25px;
+        }
+
+        #name-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .avatar-selection {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+        }
+
+        .avatar {
+            font-size: 2.5rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .avatar.selected {
+            box-shadow: 0 0 0 4px var(--focus-accent);
+            transform: scale(1.1);
+        }
+        
+        #start-app-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background-color: var(--focus-accent);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        #start-app-btn:disabled {
+            background-color: var(--light-gray);
+            cursor: not-allowed;
+        }
+
+        /* ------------------------- */
+        /* --- TEMPORIZADOR Y CÍRCULO DE PROGRESO --- */
+        /* ------------------------- */
+        .timer {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 20px auto;
+        }
+
+        .timer-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .progress-ring-circle {
+            transition: stroke-dashoffset 1s linear, stroke 0.8s ease;
+        }
+
+        #time-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        /* ------------------------- */
+        /* --- CONTROLES Y CONFIGURACIÓN --- */
+        /* ------------------------- */
+        .controls button {
+            background-color: transparent;
+            border: 2px solid var(--text-color);
+            border-radius: 50px;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 12px 24px;
+            margin: 5px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .controls button:hover {
+            background-color: var(--text-color);
+            color: var(--white);
+        }
+
+        #start-pause-btn {
+            background-color: var(--text-color);
+            color: var(--white);
+        }
+        
+        #start-pause-btn:hover {
+            background-color: var(--focus-accent);
+            border-color: var(--focus-accent);
+        }
+
+        .settings-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            border: none;
+            background: none;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -350px;
+            width: 300px;
+            height: 100%;
+            background-color: var(--white);
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            padding: 20px;
+            transition: right 0.4s ease-in-out;
+            z-index: 1001;
+            text-align: left;
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+        
+        .settings-panel h3 {
+            margin-top: 0;
+        }
+
+        .settings-group {
+            margin-bottom: 20px;
+        }
+
+        .settings-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .settings-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid var(--light-gray);
+            border-radius: 5px;
+        }
+        
+        .settings-panel .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* ------------------------- */
+        /* --- MODAL DE ALERTAS --- */
+        /* ------------------------- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-overlay);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 85%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+        }
+
+        .modal-message {
+            margin: 0 0 20px 0;
+            line-height: 1.6;
+        }
+
+        .modal-close-btn {
+            background-color: var(--text-color);
+            color: var(--white);
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .modal-close-btn:hover {
+            background-color: var(--focus-accent);
+        }
+
+        /* ------------------------- */
+        /* --- RESPONSIVIDAD --- */
+        /* ------------------------- */
+        @media (min-width: 600px) {
+            #user-greeting {
+                font-size: 2.5rem;
+            }
+             #user-avatar {
+                font-size: 2.5rem;
+            }
+            .timer {
+                width: 300px;
+                height: 300px;
+            }
+            #time-display {
+                font-size: 5.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="welcome-screen">
+        <div class="welcome-box">
+            <h2>¡Bienvenido/a a Focus Flow!</h2>
+            <p>Primero, dinos cómo te llamas y elige tu avatar profesional.</p>
+            <input type="text" id="name-input" placeholder="Escribe tu nombre o apodo...">
+            
+            <p>Elige tu avatar:</p>
+            <div class="avatar-selection" id="avatar-selection">
+                <span class="avatar" data-avatar="🧑‍💻">🧑‍💻</span>
+                <span class="avatar" data-avatar="🧑‍🔬">🧑‍🔬</span>
+                <span class="avatar" data-avatar="🧑‍🎨">🧑‍🎨</span>
+                <span class="avatar" data-avatar="🧑‍🏫">🧑‍🏫</span>
+                <span class="avatar" data-avatar="🧑‍🚀">🧑‍🚀</span>
+            </div>
+
+            <button id="start-app-btn" disabled>Comenzar a Fluir</button>
+        </div>
+    </div>
+
+
+    <div class="container">
+        <div class="user-header">
+            <h1 id="user-greeting">Focus Flow</h1>
+            <span id="user-avatar"></span>
+        </div>
+        <p id="mode-display">Tiempo de Enfoque</p>
+
+        <div class="timer">
+            <svg class="timer-svg" viewBox="0 0 100 100">
+                <g class="progress-ring">
+                    <circle class="progress-ring-track" stroke="#E6E6E6" stroke-width="4" fill="transparent" r="48" cx="50" cy="50"/>
+                    <circle id="progress-bar" class="progress-ring-circle" stroke="var(--focus-accent)" stroke-width="4" fill="transparent" r="48" cx="50" cy="50"/>
+                </g>
+            </svg>
+            <div id="time-display">25:00</div>
+        </div>
+
+        <div class="controls">
+            <button id="start-pause-btn">Iniciar</button>
+            <button id="reset-btn">Reiniciar</button>
+        </div>
+    </div>
+
+    <button class="settings-icon" id="settings-btn">⚙️</button>
+
+    <div class="settings-panel" id="settings-panel">
+        <button class="close-btn" id="close-settings-btn">&times;</button>
+        <h3>Configuración</h3>
+        <div class="settings-group">
+            <label for="focus-duration">Duración de Enfoque (minutos)</label>
+            <input type="number" id="focus-duration" min="1" value="25">
+        </div>
+        <div class="settings-group">
+            <label for="short-break-duration">Descanso Corto (minutos)</label>
+            <input type="number" id="short-break-duration" min="1" value="5">
+        </div>
+        <div class="settings-group">
+            <label for="long-break-duration">Descanso Largo (minutos)</label>
+            <input type="number" id="long-break-duration" min="1" value="15">
+        </div>
+        <div class="settings-group">
+            <label for="bedtime">Mi hora de dormir (Alerta 1h antes)</label>
+            <input type="time" id="bedtime">
+        </div>
+        <div class="settings-group">
+            <label for="sound-toggle">Activar Sonido de Notificación</label>
+            <input type="checkbox" id="sound-toggle" checked>
+        </div>
+        <button id="save-settings-btn">Guardar y Reiniciar</button>
+    </div>
+
+    <div class="modal-overlay" id="alert-modal">
+        <div class="modal-content">
+            <div class="modal-icon" id="alert-icon"></div>
+            <h2 class="modal-title" id="alert-title"></h2>
+            <p class="modal-message" id="alert-message"></p>
+            <button class="modal-close-btn" id="modal-close-btn">Entendido</button>
+        </div>
+    </div>
+    
+    <audio id="notification-sound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
+        // Pantalla de bienvenida
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const nameInput = document.getElementById('name-input');
+        const avatarSelection = document.getElementById('avatar-selection');
+        const startAppBtn = document.getElementById('start-app-btn');
+        
+        // App principal
+        const userGreeting = document.getElementById('user-greeting');
+        const userAvatar = document.getElementById('user-avatar');
+        const timeDisplay = document.getElementById('time-display');
+        const modeDisplay = document.getElementById('mode-display');
+        const startPauseBtn = document.getElementById('start-pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const alertModal = document.getElementById('alert-modal');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const notificationSound = document.getElementById('notification-sound');
+
+        // --- ESTADO INICIAL DE LA APLICACIÓN ---
+        let timerInterval = null;
+        let timeLeft = 1500;
+        let totalTime = 1500;
+        let mode = 'focus';
+        let pomodorosCompleted = 0;
+        let isPaused = true;
+        let selectedAvatar = null;
+        
+        let settings = {
+            focusDuration: 25,
+            shortBreakDuration: 5,
+            longBreakDuration: 15,
+            bedtime: '',
+            soundEnabled: true
+        };
+        
+        let userData = {
+            name: '',
+            avatar: ''
+        };
+        
+        // --- LÓGICA DE BIENVENIDA Y PERSISTENCIA ---
+        
+        /**
+         * Comprueba si el nombre y el avatar han sido seleccionados para habilitar el botón de inicio
+         */
+        function checkStartButtonState() {
+            if (nameInput.value.trim() !== '' && selectedAvatar) {
+                startAppBtn.disabled = false;
+            } else {
+                startAppBtn.disabled = true;
+            }
+        }
+        
+        /**
+         * Inicia la aplicación principal, guardando datos y ocultando la pantalla de bienvenida
+         */
+        function initializeApp() {
+            userData.name = nameInput.value.trim();
+            userData.avatar = selectedAvatar;
+            
+            localStorage.setItem('pomodoroUserData', JSON.stringify(userData));
+            
+            welcomeScreen.classList.add('hidden');
+            
+            // Permite que la transición de opacidad termine antes de quitar el elemento del flujo
+            setTimeout(() => {
+                welcomeScreen.style.display = 'none';
+            }, 500);
+            
+            updateUserUI();
+        }
+        
+        /**
+         * Actualiza la UI principal con el nombre y avatar del usuario
+         */
+        function updateUserUI() {
+            userGreeting.textContent = `Hola, ${userData.name}`;
+            userAvatar.textContent = userData.avatar;
+        }
+
+        // Event listener para la selección de avatares
+        avatarSelection.addEventListener('click', (e) => {
+            if (e.target.classList.contains('avatar')) {
+                // Quita la selección anterior
+                const currentlySelected = avatarSelection.querySelector('.selected');
+                if (currentlySelected) {
+                    currentlySelected.classList.remove('selected');
+                }
+                
+                // Selecciona el nuevo
+                e.target.classList.add('selected');
+                selectedAvatar = e.target.dataset.avatar;
+                checkStartButtonState();
+            }
+        });
+        
+        // Event listener para el input de nombre
+        nameInput.addEventListener('input', checkStartButtonState);
+        
+        // Event listener para el botón de inicio
+        startAppBtn.addEventListener('click', initializeApp);
+        
+
+        // --- LÓGICA DEL CÍRCULO DE PROGRESO (SVG) ---
+        const radius = progressBar.r.baseVal.value;
+        const circumference = 2 * Math.PI * radius;
+        progressBar.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressBar.style.strokeDashoffset = circumference;
+
+        function updateProgress() {
+            const offset = circumference - (timeLeft / totalTime) * circumference;
+            progressBar.style.strokeDashoffset = offset;
+        }
+
+        // --- FUNCIONES DEL TEMPORIZADOR ---
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            document.title = `${timeDisplay.textContent} - ${modeDisplay.textContent}`;
+        }
+
+        function startTimer() {
+            if (isPaused) {
+                isPaused = false;
+                startPauseBtn.textContent = 'Pausar';
+                if (mode === 'focus' && timeLeft === totalTime) {
+                    showAlert('💡', 'Modo Concentración Activado', 'Tu sesión de enfoque ha comenzado. Silencia las notificaciones y cierra pestañas innecesarias.');
+                }
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateDisplay();
+                    updateProgress();
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        playNotificationSound();
+                        switchMode();
+                    }
+                }, 1000);
+            }
+        }
+
+        function pauseTimer() {
+            isPaused = true;
+            startPauseBtn.textContent = 'Iniciar';
+            clearInterval(timerInterval);
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            switch(mode) {
+                case 'focus': timeLeft = settings.focusDuration * 60; break;
+                case 'shortBreak': timeLeft = settings.shortBreakDuration * 60; break;
+                case 'longBreak': timeLeft = settings.longBreakDuration * 60; break;
+            }
+            totalTime = timeLeft;
+            updateDisplay();
+            updateProgress();
+        }
+
+        function switchMode() {
+            if (mode === 'focus') {
+                pomodorosCompleted++;
+                if (pomodorosCompleted % 4 === 0) {
+                    mode = 'longBreak';
+                    modeDisplay.textContent = 'Descanso Largo';
+                } else {
+                    mode = 'shortBreak';
+                    modeDisplay.textContent = 'Descanso Corto';
+                }
+                document.body.style.backgroundColor = 'var(--break-bg)';
+                progressBar.style.stroke = 'var(--break-accent)';
+                modeDisplay.style.color = 'var(--break-accent)';
+                showAlert('🏃‍♂️', '¡Es hora de moverse!', 'Tu pausa activa es esencial para recargar tu concentración. Levántate, camina y estira.');
+            } else {
+                mode = 'focus';
+                modeDisplay.textContent = 'Tiempo de Enfoque';
+                document.body.style.backgroundColor = 'var(--focus-bg)';
+                progressBar.style.stroke = 'var(--focus-accent)';
+                modeDisplay.style.color = 'var(--focus-accent)';
+            }
+            resetTimer();
+            startTimer();
+        }
+        
+        // --- LÓGICA DE ALERTAS INTELIGENTES ---
+        function showAlert(icon, title, message) {
+            document.getElementById('alert-icon').textContent = icon;
+            document.getElementById('alert-title').textContent = title;
+            document.getElementById('alert-message').textContent = message;
+            alertModal.classList.add('visible');
+        }
+
+        function checkBedtime() {
+            if (!settings.bedtime) return;
+            const now = new Date();
+            const [hours, minutes] = settings.bedtime.split(':');
+            const bedtimeDate = new Date();
+            bedtimeDate.setHours(hours, minutes, 0, 0);
+            const oneHourBefore = new Date(bedtimeDate.getTime() - 60 * 60 * 1000);
+
+            if (now.getHours() === oneHourBefore.getHours() && now.getMinutes() === oneHourBefore.getMinutes()) {
+                const lastAlertDate = localStorage.getItem('bedtimeAlertShown');
+                const today = new Date().toDateString();
+                if (lastAlertDate !== today) {
+                    showAlert('🌙', 'Prepara tu descanso', 'Se acerca tu hora de dormir. Desconéctate de las pantallas para un sueño de calidad.');
+                    localStorage.setItem('bedtimeAlertShown', today);
+                }
+            }
+        }
+        setInterval(checkBedtime, 60000);
+
+        // --- LÓGICA DE CONFIGURACIÓN Y SONIDO ---
+        function loadSettings() {
+            const savedSettings = JSON.parse(localStorage.getItem('pomodoroSettings'));
+            if (savedSettings) settings = savedSettings;
+            
+            document.getElementById('focus-duration').value = settings.focusDuration;
+            document.getElementById('short-break-duration').value = settings.shortBreakDuration;
+            document.getElementById('long-break-duration').value = settings.longBreakDuration;
+            document.getElementById('bedtime').value = settings.bedtime;
+            document.getElementById('sound-toggle').checked = settings.soundEnabled;
+            resetTimer();
+        }
+
+        function saveSettings() {
+            settings.focusDuration = document.getElementById('focus-duration').value;
+            settings.shortBreakDuration = document.getElementById('short-break-duration').value;
+            settings.longBreakDuration = document.getElementById('long-break-duration').value;
+            settings.bedtime = document.getElementById('bedtime').value;
+            settings.soundEnabled = document.getElementById('sound-toggle').checked;
+            
+            localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
+            
+            pomodorosCompleted = 0;
+            mode = 'focus';
+            modeDisplay.textContent = 'Tiempo de Enfoque';
+            document.body.style.backgroundColor = 'var(--focus-bg)';
+            progressBar.style.stroke = 'var(--focus-accent)';
+            modeDisplay.style.color = 'var(--focus-accent)';
+            
+            resetTimer();
+            settingsPanel.classList.remove('open');
+        }
+
+        function playNotificationSound() {
+            if (settings.soundEnabled) {
+                notificationSound.currentTime = 0;
+                notificationSound.play().catch(e => console.error("Error al reproducir sonido:", e));
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        startPauseBtn.addEventListener('click', () => { isPaused ? startTimer() : pauseTimer(); });
+        resetBtn.addEventListener('click', resetTimer);
+        settingsBtn.addEventListener('click', () => { settingsPanel.classList.add('open'); });
+        closeSettingsBtn.addEventListener('click', () => { settingsPanel.classList.remove('open'); });
+        saveSettingsBtn.addEventListener('click', saveSettings);
+        modalCloseBtn.addEventListener('click', () => { alertModal.classList.remove('visible'); });
+        alertModal.addEventListener('click', (e) => { if (e.target === alertModal) alertModal.classList.remove('visible'); });
+
+        // --- INICIALIZACIÓN DE LA APLICACIÓN ---
+        function main() {
+            const savedUserData = JSON.parse(localStorage.getItem('pomodoroUserData'));
+            
+            if (savedUserData && savedUserData.name) {
+                userData = savedUserData;
+                welcomeScreen.style.display = 'none'; // Ocultar sin transición si ya está logueado
+                updateUserUI();
+            } else {
+                welcomeScreen.style.display = 'flex'; // Asegurarse de que sea visible si no hay datos
+            }
+            
+            loadSettings();
+        }
+
+        main();
+
+    });
+    </script>
+</body>
+</html>
