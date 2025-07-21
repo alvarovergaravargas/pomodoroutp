@@ -20,7 +20,6 @@
             --modal-overlay: rgba(0, 0, 0, 0.6);
         }
 
-        /* La transición en 'background-color' crea el cambio suave entre modos */
         body {
             font-family: var(--font-family);
             color: var(--text-color);
@@ -40,10 +39,22 @@
             padding: 20px;
         }
 
-        h1 {
+        .user-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        #user-greeting {
             font-weight: 300;
             font-size: 2rem;
-            margin-bottom: 5px;
+            margin: 0;
+        }
+
+        #user-avatar {
+            font-size: 2rem;
         }
 
         #mode-display {
@@ -52,6 +63,97 @@
             font-weight: 600;
             color: var(--focus-accent);
             transition: color 0.8s ease;
+        }
+
+        /* ------------------------- */
+        /* --- PANTALLA DE BIENVENIDA --- */
+        /* ------------------------- */
+        #welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--focus-bg);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        #welcome-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .welcome-box {
+            background: var(--white);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .welcome-box h2 {
+            margin-top: 0;
+        }
+        
+        .welcome-box p {
+            margin-bottom: 25px;
+        }
+
+        #name-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .avatar-selection {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+        }
+
+        .avatar {
+            font-size: 2.5rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .avatar.selected {
+            box-shadow: 0 0 0 4px var(--focus-accent);
+            transform: scale(1.1);
+        }
+        
+        #start-app-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background-color: var(--focus-accent);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        #start-app-btn:disabled {
+            background-color: var(--light-gray);
+            cursor: not-allowed;
         }
 
         /* ------------------------- */
@@ -85,7 +187,7 @@
         }
 
         /* ------------------------- */
-        /* --- CONTROLES --- */
+        /* --- CONTROLES Y CONFIGURACIÓN --- */
         /* ------------------------- */
         .controls button {
             background-color: transparent;
@@ -115,9 +217,6 @@
             border-color: var(--focus-accent);
         }
 
-        /* ------------------------- */
-        /* --- PANEL DE CONFIGURACIÓN --- */
-        /* ------------------------- */
         .settings-icon {
             position: absolute;
             top: 20px;
@@ -131,7 +230,7 @@
         .settings-panel {
             position: fixed;
             top: 0;
-            right: -350px; /* Inicia fuera de la pantalla */
+            right: -350px;
             width: 300px;
             height: 100%;
             background-color: var(--white);
@@ -251,7 +350,10 @@
         /* --- RESPONSIVIDAD --- */
         /* ------------------------- */
         @media (min-width: 600px) {
-            h1 {
+            #user-greeting {
+                font-size: 2.5rem;
+            }
+             #user-avatar {
                 font-size: 2.5rem;
             }
             .timer {
@@ -266,8 +368,31 @@
 </head>
 <body>
 
+    <div id="welcome-screen">
+        <div class="welcome-box">
+            <h2>¡Bienvenido/a a Focus Flow!</h2>
+            <p>Primero, dinos cómo te llamas y elige tu avatar profesional.</p>
+            <input type="text" id="name-input" placeholder="Escribe tu nombre o apodo...">
+            
+            <p>Elige tu avatar:</p>
+            <div class="avatar-selection" id="avatar-selection">
+                <span class="avatar" data-avatar="🧑‍💻">🧑‍💻</span>
+                <span class="avatar" data-avatar="🧑‍🔬">🧑‍🔬</span>
+                <span class="avatar" data-avatar="🧑‍🎨">🧑‍🎨</span>
+                <span class="avatar" data-avatar="🧑‍🏫">🧑‍🏫</span>
+                <span class="avatar" data-avatar="🧑‍🚀">🧑‍🚀</span>
+            </div>
+
+            <button id="start-app-btn" disabled>Comenzar a Fluir</button>
+        </div>
+    </div>
+
+
     <div class="container">
-        <h1>Focus Flow</h1>
+        <div class="user-header">
+            <h1 id="user-greeting">Focus Flow</h1>
+            <span id="user-avatar"></span>
+        </div>
         <p id="mode-display">Tiempo de Enfoque</p>
 
         <div class="timer">
@@ -330,6 +455,15 @@
     document.addEventListener('DOMContentLoaded', () => {
 
         // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
+        // Pantalla de bienvenida
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const nameInput = document.getElementById('name-input');
+        const avatarSelection = document.getElementById('avatar-selection');
+        const startAppBtn = document.getElementById('start-app-btn');
+        
+        // App principal
+        const userGreeting = document.getElementById('user-greeting');
+        const userAvatar = document.getElementById('user-avatar');
         const timeDisplay = document.getElementById('time-display');
         const modeDisplay = document.getElementById('mode-display');
         const startPauseBtn = document.getElementById('start-pause-btn');
@@ -345,11 +479,12 @@
 
         // --- ESTADO INICIAL DE LA APLICACIÓN ---
         let timerInterval = null;
-        let timeLeft = 1500; // 25 minutos en segundos
+        let timeLeft = 1500;
         let totalTime = 1500;
-        let mode = 'focus'; // 'focus', 'shortBreak', 'longBreak'
+        let mode = 'focus';
         let pomodorosCompleted = 0;
         let isPaused = true;
+        let selectedAvatar = null;
         
         let settings = {
             focusDuration: 25,
@@ -358,6 +493,74 @@
             bedtime: '',
             soundEnabled: true
         };
+        
+        let userData = {
+            name: '',
+            avatar: ''
+        };
+        
+        // --- LÓGICA DE BIENVENIDA Y PERSISTENCIA ---
+        
+        /**
+         * Comprueba si el nombre y el avatar han sido seleccionados para habilitar el botón de inicio
+         */
+        function checkStartButtonState() {
+            if (nameInput.value.trim() !== '' && selectedAvatar) {
+                startAppBtn.disabled = false;
+            } else {
+                startAppBtn.disabled = true;
+            }
+        }
+        
+        /**
+         * Inicia la aplicación principal, guardando datos y ocultando la pantalla de bienvenida
+         */
+        function initializeApp() {
+            userData.name = nameInput.value.trim();
+            userData.avatar = selectedAvatar;
+            
+            localStorage.setItem('pomodoroUserData', JSON.stringify(userData));
+            
+            welcomeScreen.classList.add('hidden');
+            
+            // Permite que la transición de opacidad termine antes de quitar el elemento del flujo
+            setTimeout(() => {
+                welcomeScreen.style.display = 'none';
+            }, 500);
+            
+            updateUserUI();
+        }
+        
+        /**
+         * Actualiza la UI principal con el nombre y avatar del usuario
+         */
+        function updateUserUI() {
+            userGreeting.textContent = `Hola, ${userData.name}`;
+            userAvatar.textContent = userData.avatar;
+        }
+
+        // Event listener para la selección de avatares
+        avatarSelection.addEventListener('click', (e) => {
+            if (e.target.classList.contains('avatar')) {
+                // Quita la selección anterior
+                const currentlySelected = avatarSelection.querySelector('.selected');
+                if (currentlySelected) {
+                    currentlySelected.classList.remove('selected');
+                }
+                
+                // Selecciona el nuevo
+                e.target.classList.add('selected');
+                selectedAvatar = e.target.dataset.avatar;
+                checkStartButtonState();
+            }
+        });
+        
+        // Event listener para el input de nombre
+        nameInput.addEventListener('input', checkStartButtonState);
+        
+        // Event listener para el botón de inicio
+        startAppBtn.addEventListener('click', initializeApp);
+        
 
         // --- LÓGICA DEL CÍRCULO DE PROGRESO (SVG) ---
         const radius = progressBar.r.baseVal.value;
@@ -371,10 +574,6 @@
         }
 
         // --- FUNCIONES DEL TEMPORIZADOR ---
-
-        /**
-         * Actualiza el display del tiempo en formato MM:SS
-         */
         function updateDisplay() {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
@@ -382,22 +581,12 @@
             document.title = `${timeDisplay.textContent} - ${modeDisplay.textContent}`;
         }
 
-        /**
-         * Inicia o reanuda el temporizador
-         */
         function startTimer() {
             if (isPaused) {
                 isPaused = false;
                 startPauseBtn.textContent = 'Pausar';
-                if (mode === 'focus') {
-                    // Muestra la alerta de concentración solo si es un inicio nuevo, no una reanudación.
-                    if (timeLeft === totalTime) {
-                         showAlert(
-                            '💡',
-                            'Modo Concentración Activado',
-                            'Tu sesión de enfoque ha comenzado. Silencia las notificaciones en tu teléfono y cierra las pestañas innecesarias para evitar distracciones.'
-                        );
-                    }
+                if (mode === 'focus' && timeLeft === totalTime) {
+                    showAlert('💡', 'Modo Concentración Activado', 'Tu sesión de enfoque ha comenzado. Silencia las notificaciones y cierra pestañas innecesarias.');
                 }
                 timerInterval = setInterval(() => {
                     timeLeft--;
@@ -412,61 +601,38 @@
             }
         }
 
-        /**
-         * Pausa el temporizador
-         */
         function pauseTimer() {
             isPaused = true;
             startPauseBtn.textContent = 'Iniciar';
             clearInterval(timerInterval);
         }
 
-        /**
-         * Reinicia el temporizador al valor del modo actual
-         */
         function resetTimer() {
             pauseTimer();
             switch(mode) {
-                case 'focus':
-                    timeLeft = settings.focusDuration * 60;
-                    break;
-                case 'shortBreak':
-                    timeLeft = settings.shortBreakDuration * 60;
-                    break;
-                case 'longBreak':
-                    timeLeft = settings.longBreakDuration * 60;
-                    break;
+                case 'focus': timeLeft = settings.focusDuration * 60; break;
+                case 'shortBreak': timeLeft = settings.shortBreakDuration * 60; break;
+                case 'longBreak': timeLeft = settings.longBreakDuration * 60; break;
             }
             totalTime = timeLeft;
             updateDisplay();
             updateProgress();
         }
 
-        /**
-         * Cambia entre los modos de enfoque y descanso
-         */
         function switchMode() {
             if (mode === 'focus') {
                 pomodorosCompleted++;
                 if (pomodorosCompleted % 4 === 0) {
                     mode = 'longBreak';
                     modeDisplay.textContent = 'Descanso Largo';
-                    document.body.style.backgroundColor = 'var(--break-bg)';
-                    progressBar.style.stroke = 'var(--break-accent)';
-                    modeDisplay.style.color = 'var(--break-accent)';
                 } else {
                     mode = 'shortBreak';
                     modeDisplay.textContent = 'Descanso Corto';
-                    document.body.style.backgroundColor = 'var(--break-bg)';
-                    progressBar.style.stroke = 'var(--break-accent)';
-                    modeDisplay.style.color = 'var(--break-accent)';
                 }
-                // Alerta de Pausa Activa al comenzar cualquier descanso
-                showAlert(
-                    '🏃‍♂️',
-                    '¡Es hora de moverse!',
-                    'Tu pausa activa es esencial para combatir el sedentarismo y recargar tu concentración. Levántate, camina y estira durante al menos 5 minutos.'
-                );
+                document.body.style.backgroundColor = 'var(--break-bg)';
+                progressBar.style.stroke = 'var(--break-accent)';
+                modeDisplay.style.color = 'var(--break-accent)';
+                showAlert('🏃‍♂️', '¡Es hora de moverse!', 'Tu pausa activa es esencial para recargar tu concentración. Levántate, camina y estira.');
             } else {
                 mode = 'focus';
                 modeDisplay.textContent = 'Tiempo de Enfoque';
@@ -474,19 +640,11 @@
                 progressBar.style.stroke = 'var(--focus-accent)';
                 modeDisplay.style.color = 'var(--focus-accent)';
             }
-            
             resetTimer();
-            startTimer(); // Inicia automáticamente el siguiente ciclo
+            startTimer();
         }
         
         // --- LÓGICA DE ALERTAS INTELIGENTES ---
-
-        /**
-         * Muestra el modal de alerta con contenido dinámico
-         * @param {string} icon - Emoji o SVG para el ícono
-         * @param {string} title - Título del modal
-         * @param {string} message - Mensaje del modal
-         */
         function showAlert(icon, title, message) {
             document.getElementById('alert-icon').textContent = icon;
             document.getElementById('alert-title').textContent = title;
@@ -494,50 +652,30 @@
             alertModal.classList.add('visible');
         }
 
-        /**
-         * Verifica si es hora de mostrar la alerta de sueño
-         */
         function checkBedtime() {
             if (!settings.bedtime) return;
-
             const now = new Date();
             const [hours, minutes] = settings.bedtime.split(':');
             const bedtimeDate = new Date();
             bedtimeDate.setHours(hours, minutes, 0, 0);
-
             const oneHourBefore = new Date(bedtimeDate.getTime() - 60 * 60 * 1000);
 
-            // Comprueba si la hora actual está dentro del minuto de la alerta
             if (now.getHours() === oneHourBefore.getHours() && now.getMinutes() === oneHourBefore.getMinutes()) {
                 const lastAlertDate = localStorage.getItem('bedtimeAlertShown');
                 const today = new Date().toDateString();
-                
                 if (lastAlertDate !== today) {
-                    showAlert(
-                        '🌙',
-                        'Prepara tu descanso',
-                        'Se acerca tu hora de dormir. Para un sueño de calidad, desconéctate de las pantallas ahora. La luz azul puede afectar tu descanso.'
-                    );
+                    showAlert('🌙', 'Prepara tu descanso', 'Se acerca tu hora de dormir. Desconéctate de las pantallas para un sueño de calidad.');
                     localStorage.setItem('bedtimeAlertShown', today);
                 }
             }
         }
-
-        // Ejecutar la comprobación de la hora de dormir cada minuto
         setInterval(checkBedtime, 60000);
 
-
-        // --- LÓGICA DE CONFIGURACIÓN Y PERSISTENCIA ---
-        
-        /**
-         * Carga la configuración desde localStorage o usa los valores por defecto
-         */
+        // --- LÓGICA DE CONFIGURACIÓN Y SONIDO ---
         function loadSettings() {
             const savedSettings = JSON.parse(localStorage.getItem('pomodoroSettings'));
-            if (savedSettings) {
-                settings = savedSettings;
-            }
-            // Actualiza los campos del formulario con los valores cargados
+            if (savedSettings) settings = savedSettings;
+            
             document.getElementById('focus-duration').value = settings.focusDuration;
             document.getElementById('short-break-duration').value = settings.shortBreakDuration;
             document.getElementById('long-break-duration').value = settings.longBreakDuration;
@@ -546,9 +684,6 @@
             resetTimer();
         }
 
-        /**
-         * Guarda la configuración actual en localStorage
-         */
         function saveSettings() {
             settings.focusDuration = document.getElementById('focus-duration').value;
             settings.shortBreakDuration = document.getElementById('short-break-duration').value;
@@ -558,7 +693,6 @@
             
             localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
             
-            // Reinicia la aplicación con la nueva configuración
             pomodorosCompleted = 0;
             mode = 'focus';
             modeDisplay.textContent = 'Tiempo de Enfoque';
@@ -570,7 +704,6 @@
             settingsPanel.classList.remove('open');
         }
 
-        // --- MANEJO DE SONIDO ---
         function playNotificationSound() {
             if (settings.soundEnabled) {
                 notificationSound.currentTime = 0;
@@ -578,38 +711,31 @@
             }
         }
 
-
         // --- EVENT LISTENERS ---
-        startPauseBtn.addEventListener('click', () => {
-            isPaused ? startTimer() : pauseTimer();
-        });
-
+        startPauseBtn.addEventListener('click', () => { isPaused ? startTimer() : pauseTimer(); });
         resetBtn.addEventListener('click', resetTimer);
-
-        settingsBtn.addEventListener('click', () => {
-            settingsPanel.classList.add('open');
-        });
-
-        closeSettingsBtn.addEventListener('click', () => {
-            settingsPanel.classList.remove('open');
-        });
-
+        settingsBtn.addEventListener('click', () => { settingsPanel.classList.add('open'); });
+        closeSettingsBtn.addEventListener('click', () => { settingsPanel.classList.remove('open'); });
         saveSettingsBtn.addEventListener('click', saveSettings);
+        modalCloseBtn.addEventListener('click', () => { alertModal.classList.remove('visible'); });
+        alertModal.addEventListener('click', (e) => { if (e.target === alertModal) alertModal.classList.remove('visible'); });
 
-        modalCloseBtn.addEventListener('click', () => {
-            alertModal.classList.remove('visible');
-        });
-
-        // Cerrar modal al hacer clic en el overlay
-        alertModal.addEventListener('click', (e) => {
-            if (e.target === alertModal) {
-                 alertModal.classList.remove('visible');
+        // --- INICIALIZACIÓN DE LA APLICACIÓN ---
+        function main() {
+            const savedUserData = JSON.parse(localStorage.getItem('pomodoroUserData'));
+            
+            if (savedUserData && savedUserData.name) {
+                userData = savedUserData;
+                welcomeScreen.style.display = 'none'; // Ocultar sin transición si ya está logueado
+                updateUserUI();
+            } else {
+                welcomeScreen.style.display = 'flex'; // Asegurarse de que sea visible si no hay datos
             }
-        });
+            
+            loadSettings();
+        }
 
-
-        // --- INICIALIZACIÓN ---
-        loadSettings();
+        main();
 
     });
     </script>
